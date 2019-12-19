@@ -27,10 +27,13 @@ def get_start_end_time(start_time: str, duration=1):
 
     start_time_match = list(datefinder.find_dates(start_time))
 
-
-    if start_time_match:
+    if start_time_match and start_time_match[0].hour:
         start_time = start_time_match[0]
         end_time = (start_time_match[0] + datetime.timedelta(hours=duration))
+
+    elif start_time_match:
+        start_time = start_time_match[0].date()
+        end_time = start_time_match[0].date() + datetime.timedelta(days=duration)
 
     else:
         start_time = end_time = datetime.datetime.now().date()
@@ -47,13 +50,14 @@ def get_formated_start_end_time(start_time: str, duration=1):
     start = {'timeZone': time_zone}
     end = {'timeZone': time_zone}
 
-    if isinstance(start_time, datetime.date):
-        start['date'] = start_time.strftime('%Y-%m-%d')
-        end['date'] = end_time.strftime('%Y-%m-%d')
-
-    elif isinstance(start_time, datetime.datetime):
+    if isinstance(start_time, datetime.datetime):
         start['dateTime'] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
         end['dateTime'] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+    elif isinstance(start_time, datetime.date):
+        start['date'] = start_time.strftime('%Y-%m-%d')
+        end['date'] = end_time.strftime('%Y-%m-%d')
 
     return start, end
 
@@ -75,7 +79,6 @@ def add_event(start_time, summary, duration=1, attendees=None, description=None,
 
     start, end = get_formated_start_end_time(start_time, duration)
 
-
     event = {
         'start': start,
         'end': end,
@@ -92,5 +95,5 @@ def add_event(start_time, summary, duration=1, attendees=None, description=None,
     return
 
 
-add_event('18/12/19 at 7 p.m.', 'test summary', description='Test description')
+add_event('завтра', 'test summary', description='Test description')
 
