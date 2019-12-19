@@ -22,6 +22,7 @@ def dump_credentials(credentials):
 def get_credentials():
     return pickle.load(open("token.pkl", "rb"))
 
+
 def get_start_end_time(start_time: str, duration=1):
 
     start_time_match = list(datefinder.find_dates(start_time))
@@ -35,7 +36,6 @@ def get_start_end_time(start_time: str, duration=1):
         start_time = end_time = datetime.datetime.now().date()
 
     return start_time, end_time
-
 
 
 def get_formated_start_end_time(start_time: str, duration=1):
@@ -53,7 +53,7 @@ def get_formated_start_end_time(start_time: str, duration=1):
 
     elif isinstance(start_time, datetime.datetime):
         start['dateTime'] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
-        end['date'] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+        end['dateTime'] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
 
     return start, end
 
@@ -92,5 +92,5 @@ def add_event(start_time, summary, duration=1, attendees=None, description=None,
     return
 
 
-add_event('today', 'test summary', description='Test description')
+add_event('18/12/19 at 7 p.m.', 'test summary', description='Test description')
 
