@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 
 
-from calendar_core import get_start_end_time
+from main_api import get_start_end_time
 
 class CalendarCoreTest(unittest.TestCase):
 
