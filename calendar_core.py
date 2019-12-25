@@ -10,11 +10,12 @@ savings = None
 def authorise(user_id):
     scopes = ['https://www.googleapis.com/auth/calendar']
 
-    # flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", scopes=scopes)
-    # credentials = flow.run_console()
+    flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", scopes=scopes)
+    credentials = flow.run_console()
 
-    credentials = get_credentials()
     save_user(user_id, credentials)
+
+    return credentials
 
 def connect_db():
 
@@ -23,22 +24,23 @@ def connect_db():
         conn = sqlite3.connect('calendar_settings.sqlite')
     except:
         #Log connection error
+
         pass
     return conn
 
 def save_user(user_id, credentials):
 
-    service = get_service(credentials)
+    service = get_calendar_sevice(user_id, credentials)
 
-    time_zone = get_timezone(credentials, service)
+    time_zone = get_primary_time_zone(user_id, credentials=credentials, service=service)
     calendar_id = create_calendar(service, time_zone)
     credentials = pickle.dumps(credentials)
     param = (user_id, credentials, time_zone, calendar_id)
 
-    insert_or_update(param)
+    insert_update_settings(param)
 
 
-def insert_or_update(param):
+def insert_update_settings(param):
 
     settings = connect_db()
     sql = '''INSERT INTO settings (user_id, credentials, time_zone, calendar_id) VALUES (?, ?, ?, ?)
@@ -62,14 +64,20 @@ def create_calendar(service, time_zone):
     return created_calendar['id']
 
 
+def get_user_settings(user_id):
 
-def get_credentials():
-    return pickle.load(open("token.pkl", "rb"))
+    settings = connect_db().cursor()
 
+    sql = '''SELECT * FROM settings WHERE user_id=?'''
+    result = settings.execute(sql, [user_id]).fetchone()
 
-def get_formated_start_end_time(start_time, end_time):
+    if not result:
+        authorise(user_id)
+        result = get_user_settings(user_id)
 
-    time_zone = get_timezone()
+    return result
+
+def get_formated_start_end_time(start_time, end_time, time_zone):
 
     start = {'timeZone': time_zone}
     end = {'timeZone': time_zone}
@@ -85,15 +93,16 @@ def get_formated_start_end_time(start_time, end_time):
 
     return start, end
 
-def get_timezone(credentials=None, service=None):
+def get_primary_time_zone(user_id, credentials=None, service=None):
 
-    service = service or get_service(credentials)
+    service = service or get_calendar_sevice(user_id, credentials)
     result = service.calendarList().get(calendarId='primary').execute()
 
     return result['timeZone']
 
-def get_service(credentials=None):
-    credentials = credentials or get_credentials()
+def get_calendar_sevice(user_id, credentials=None):
+
+    credentials = credentials or authorise(user_id)
     service = build('calendar', 'v3', credentials=credentials)
 
     return service
@@ -101,7 +110,10 @@ def get_service(credentials=None):
 
 def add_event(user_id, description, start, end, attendees=None, location=None):
 
-    start, end = get_formated_start_end_time(start, end)
+    credentials, time_zone, calendar_id = get_user_settings(user_id)[1:4]
+    credentials = pickle.loads(credentials)
+
+    start, end = get_formated_start_end_time(start, end, time_zone)
 
     event = {
         'start': start,
@@ -112,10 +124,8 @@ def add_event(user_id, description, start, end, attendees=None, location=None):
         'attendees': [{'email': email} for email in attendees] if attendees else None
     }
 
-    service = get_service()
+    service = get_calendar_sevice(user_id, credentials)
 
-    service.events().insert(calendarId='primary', body=event, sendNotifications=True).execute()
+    service.events().insert(calendarId=calendar_id, body=event, sendNotifications=True).execute()
 
     return
-
-authorise(1)
