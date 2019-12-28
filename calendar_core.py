@@ -101,6 +101,33 @@ def create_calendar(user_id, calendar_name, service=None):
     return
 
 
+def fetch_calendar(user_id, calendar_name):
+
+    calendar_id = get_calendar_id(user_id, calendar_name)
+
+    save_user(user_id, calendar_id=calendar_id)
+
+
+def get_calendar_id(user_id, calendar_name):
+    credentials = get_user_settings(user_id)[1]
+    credentials = pickle.loads(credentials)
+
+    service = get_calendar_sevice(user_id, credentials=credentials)
+
+    page_token = None
+
+    while True:
+        calendar_list = service.calendarList().list(pageToken=page_token).execute()
+        for calendar_list_entry in calendar_list['items']:
+            if calendar_list_entry['summary'].lower() == calendar_name.lower():
+                return calendar_list_entry['id']
+
+        page_token = calendar_list.get('nextPageToken')
+        if not page_token:
+            break
+
+    return None
+
 def get_user_settings(user_id):
 
     settings = connect_db().cursor()
@@ -113,6 +140,7 @@ def get_user_settings(user_id):
         return get_user_settings(user_id)
 
     return result
+
 
 def get_formated_start_end_time(start_time, end_time, time_zone):
 
@@ -169,4 +197,3 @@ def add_event(user_id, description, start, end, attendees=None, location=None):
     service.events().insert(calendarId=calendar_id, body=event, sendNotifications=True).execute()
 
     return
-
