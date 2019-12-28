@@ -173,7 +173,13 @@ def get_primary_time_zone(user_id, credentials=None, service=None):
 def get_calendar_sevice(user_id, credentials=None):
 
     credentials = credentials or authorise(user_id)
-    service = build('calendar', 'v3', credentials=credentials)
+
+    try:
+        service = build('calendar', 'v3', credentials=credentials)
+
+    except AttributeError:
+        authorise(user_id)
+        return get_calendar_sevice(user_id)
 
     return service
 
@@ -202,6 +208,7 @@ def add_event(user_id, description, start, end, service=None, attendees=None, lo
     except HttpError as err:
         if err.resp.status == 404:
             #log calendar_id not found... or something else missed
+            print('Herer')
             save_user(user_id, calendar_id='primary')
             add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
 
