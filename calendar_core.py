@@ -1,6 +1,8 @@
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+from googleapiclient.errors import HttpError
+
 import datetime
 import pickle
 import sqlite3
@@ -176,24 +178,32 @@ def get_calendar_sevice(user_id, credentials=None):
     return service
 
 
-def add_event(user_id, description, start, end, attendees=None, location=None):
+def add_event(user_id, description, start, end, service=None, attendees=None, location=None, ):
 
     credentials, time_zone, calendar_id = get_user_settings(user_id)[1:4]
     credentials = pickle.loads(credentials)
 
-    start, end = get_formated_start_end_time(start, end, time_zone)
+    start_formated, end_formated = get_formated_start_end_time(start, end, time_zone)
 
     event = {
-        'start': start,
-        'end': end,
+        'start': start_formated,
+        'end': end_formated,
         'summary': description[:50],
         'description': description,
         'location': location,
         'attendees': [{'email': email} for email in attendees] if attendees else None
     }
 
-    service = get_calendar_sevice(user_id, credentials)
+    service = service or get_calendar_sevice(user_id, credentials)
 
-    service.events().insert(calendarId=calendar_id, body=event, sendNotifications=True).execute()
+    try:
+        service.events().insert(calendarId=calendar_id, body=event, sendNotifications=True).execute()
+
+    except HttpError as err:
+        if err.resp.status == 404:
+            #log calendar_id not found... or something else missed
+            save_user(user_id, calendar_id='primary')
+            add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
+
 
     return
