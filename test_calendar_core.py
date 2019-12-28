@@ -3,6 +3,7 @@ from datetime import datetime
 
 
 from main_api import get_start_end_time
+import calendar_core
 
 class CalendarCoreTest(unittest.TestCase):
 
@@ -20,6 +21,12 @@ class CalendarCoreTest(unittest.TestCase):
 
         self.assertEqual((start3, end3), (datetime.now().date(), datetime.now().date()))
 
+    def test_get_update_sql_text(self):
+        param1 = calendar_core.get_update_sql_text(credentials='value_credentials', calendar_id='123')
+        param2 = calendar_core.get_update_sql_text(time_zone='Nicosia/Cyprus')
+
+        self.assertEqual(param1,'credentials = excluded.credentials,\ncalendar_id = excluded.calendar_id')
+        self.assertEqual(param2, 'time_zone = excluded.time_zone')
 
 
 
