@@ -66,6 +66,7 @@ def save_settings(settings, user_id, **kwargs):
 
 def get_update_sql_text(**kwargs):
      on_update = ',\n'.join(key + ' = excluded.' + key for key in kwargs.keys())
+
      return on_update
 
 
@@ -79,6 +80,7 @@ def get_insert_sql_text(**kwargs):
 def create_calendar(user_id, calendar_name, service=None):
 
     credentials, time_zone = get_user_settings(user_id)[1:3]
+    credentials = pickle.loads(credentials)
 
     service = service or get_calendar_sevice(user_id, credentials=credentials)
 
@@ -108,7 +110,7 @@ def get_user_settings(user_id):
 
     if not result:
         authorise(user_id)
-        result = get_user_settings(user_id)
+        return get_user_settings(user_id)
 
     return result
 
@@ -168,4 +170,3 @@ def add_event(user_id, description, start, end, attendees=None, location=None):
 
     return
 
-save_user(3, time_zone='123', calendar_id='12345')
