@@ -1,7 +1,8 @@
-from calendar_core import add_event
 import datefinder
 import datetime
 import re
+
+import calendar_core
 
 def create_event(user_id, message):
 
@@ -9,7 +10,10 @@ def create_event(user_id, message):
     location = find_location(message)
     start, end = get_start_end_time(message)
 
-    add_event(user_id, message, start, end, attendees=attendees, location=location)
+    event_status = calendar_core.add_event(user_id, message, start, end, attendees=attendees, location=location)
+
+    return event_status, start, attendees, location
+
 
 
 def get_start_end_time(start_time: str, duration=1):
@@ -37,6 +41,15 @@ def find_location(message):
 
     return None
 
-message = """"""
+def add_calendar(user_id, calendar_name):
+    fetched = calendar_core.fetch_calendar(user_id, calendar_name)
+    status = 'FETCHED'
 
-create_event(1, message)
+    if not fetched:
+            created = calendar_core.create_calendar(user_id, calendar_name)
+            if created:
+                status = 'CREATED'
+            else:
+                status = 'MISTAKE'
+
+    return status
