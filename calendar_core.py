@@ -13,7 +13,7 @@ def authorise(user_id):
     flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", scopes=scopes)
     credentials = flow.run_console()
 
-    save_user(user_id, credentials=credentials)
+    save_user(user_id, credentials=pickle.dumps(credentials))
 
     return credentials
 
@@ -32,25 +32,8 @@ def connect_db():
 def save_user(user_id, **kwargs):
 
     settings = connect_db()
-
-    if 'credentials' in kwargs.keys():
-        save_credentials(settings, user_id, kwargs['credentials'])
-        del kwargs['credentials']
-
-    if kwargs.keys():
-        save_settings(settings, user_id, **kwargs)
-
+    save_settings(settings, user_id, **kwargs)
     settings.commit()
-
-
-def save_credentials(settings, user_id, credentials):
-    credentials = pickle.dumps(credentials)
-
-    sql = """INSERT INTO settings (user_id, credentials) VALUES (? ,?)
-            ON CONFLICT(settings.user_id) DO UPDATE SET
-            credentials = excluded.credentials"""
-
-    settings.execute(sql, (user_id, credentials))
 
 
 def save_settings(settings, user_id, **kwargs):
@@ -62,7 +45,8 @@ def save_settings(settings, user_id, **kwargs):
             ON CONFLICT(settings.user_id) DO UPDATE SET 
             {on_update};'''.format(columns=columns, user_id=user_id, values=values, on_update=on_update)
 
-    settings.execute(sql)
+    param = tuple(kwargs.values())
+    settings.execute(sql, param)
 
 
 def get_update_sql_text(**kwargs):
@@ -73,7 +57,7 @@ def get_update_sql_text(**kwargs):
 
 def get_insert_sql_text(**kwargs):
     columns = ','.join(key for key in kwargs.keys())
-    values = ','.join("\"" + value + "\"" for value in kwargs.values())
+    values = ','.join('?' for _ in range(len(kwargs.values())))
 
     return columns, values
 
@@ -86,7 +70,7 @@ def create_calendar(user_id, calendar_name, service=None):
     service = service or get_calendar_sevice(user_id, credentials=credentials)
 
     if not time_zone:
-        time_zone = get_primary_time_zone(user_id, service=service)
+        time_zone = get_calendar_time_zone(user_id, service=service)
 
     calendar = {
         'summary': calendar_name,
@@ -96,7 +80,7 @@ def create_calendar(user_id, calendar_name, service=None):
     try:
         created_calendar = service.calendars().insert(body=calendar).execute()
         calendar_id = created_calendar['id']
-        save_user(user_id, calendar_id=calendar_id)
+        save_user(user_id, calendar_id=calendar_id, time_zone=time_zone)
 
     except HttpError as err:
         #Log error
@@ -108,15 +92,15 @@ def create_calendar(user_id, calendar_name, service=None):
 def fetch_calendar(user_id, calendar_name):
 
     calendar_id = get_calendar_id(user_id, calendar_name)
+    time_zone = get_calendar_time_zone(user_id, calendar_id=calendar_id)
 
-    save_user(user_id, calendar_id=calendar_id)
+    save_user(user_id, calendar_id=calendar_id, time_zone=time_zone)
 
     return calendar_id is not None
 
 
 def get_calendar_id(user_id, calendar_name):
-    credentials = get_user_settings(user_id)[1]
-    credentials = pickle.loads(credentials)
+    credentials = get_credentials(user_id)
 
     service = get_calendar_sevice(user_id, credentials=credentials)
 
@@ -164,19 +148,22 @@ def get_formated_start_end_time(start_time, end_time, time_zone):
 
     return start, end
 
-def get_primary_time_zone(user_id, credentials=None, service=None):
+def get_calendar_time_zone(user_id, calendar_id=None, credentials=None, service=None):
 
     if not service:
-        credentials = credentials or get_user_settings(user_id)[1]
+        credentials = credentials or get_credentials(user_id)
+
+    if not calendar_id:
+        calendar_id = 'primary'
 
     service = service or get_calendar_sevice(user_id, credentials)
-    result = service.calendarList().get(calendarId='primary').execute()
+    result = service.calendarList().get(calendarId=calendar_id).execute()
 
     return result['timeZone']
 
 def get_calendar_sevice(user_id, credentials=None):
 
-    credentials = credentials or authorise(user_id)
+    credentials = credentials or get_credentials(user_id)
 
     try:
         service = build('calendar', 'v3', credentials=credentials)
@@ -186,6 +173,15 @@ def get_calendar_sevice(user_id, credentials=None):
         return get_calendar_sevice(user_id)
 
     return service
+
+def  get_credentials(user_id):
+
+    credentials = pickle.loads(get_user_settings(user_id)[1])
+
+    if not credentials:
+        credentials = authorise(user_id)
+
+    return credentials
 
 
 def add_event(user_id, description, start, end, service=None, attendees=None, location=None, ):
@@ -217,4 +213,3 @@ def add_event(user_id, description, start, end, service=None, attendees=None, lo
             add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
 
     return 'MISTAKE'
-
