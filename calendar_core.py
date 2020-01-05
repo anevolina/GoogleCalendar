@@ -1,11 +1,10 @@
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-
-from googleapiclient.errors import HttpError
-
 import datetime
 import pickle
 import sqlite3
+
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 
 def authorise(user_id):
@@ -94,13 +93,16 @@ def create_calendar(user_id, calendar_name, service=None):
         'timeZone': time_zone
     }
 
-    created_calendar = service.calendars().insert(body=calendar).execute()
+    try:
+        created_calendar = service.calendars().insert(body=calendar).execute()
+        calendar_id = created_calendar['id']
+        save_user(user_id, calendar_id=calendar_id)
 
-    calendar_id = created_calendar['id']
+    except HttpError as err:
+        #Log error
+        calendar_id = None
 
-    save_user(user_id, calendar_id=calendar_id)
-
-    return
+    return calendar_id is not None
 
 
 def fetch_calendar(user_id, calendar_name):
@@ -108,6 +110,8 @@ def fetch_calendar(user_id, calendar_name):
     calendar_id = get_calendar_id(user_id, calendar_name)
 
     save_user(user_id, calendar_id=calendar_id)
+
+    return calendar_id is not None
 
 
 def get_calendar_id(user_id, calendar_name):
@@ -204,13 +208,13 @@ def add_event(user_id, description, start, end, service=None, attendees=None, lo
 
     try:
         service.events().insert(calendarId=calendar_id, body=event, sendNotifications=True).execute()
+        return 'CREATED'
 
     except HttpError as err:
         if err.resp.status == 404:
             #log calendar_id not found... or something else missed
-            print('Herer')
             save_user(user_id, calendar_id='primary')
             add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
 
+    return 'MISTAKE'
 
-    return
