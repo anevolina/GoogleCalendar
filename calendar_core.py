@@ -2,7 +2,7 @@ import datetime
 import pickle
 import sqlite3
 
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -16,6 +16,38 @@ def authorise(user_id):
     save_user(user_id, credentials=pickle.dumps(credentials))
 
     return credentials
+
+def get_authorisation_url():
+    flow = get_flow()
+    auth_url, _ = flow.authorization_url(prompt='consent')
+
+    return auth_url
+
+def fetch_token(user_id, code):
+
+    flow = get_flow()
+
+    try:
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        save_user(user_id, credentials=pickle.dumps(credentials))
+        return True
+    except Exception as e:
+        print(e)
+        #Log error
+
+        return False
+
+def get_flow():
+    scopes = ['https://www.googleapis.com/auth/calendar']
+
+    flow = Flow.from_client_secrets_file(
+        'client_secret.json',
+        scopes=scopes,
+        redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+
+    return flow
+
 
 def connect_db():
 
@@ -183,8 +215,22 @@ def  get_credentials(user_id):
 
     return credentials
 
+def set_calendar_to_primary(user_id):
 
-def add_event(user_id, description, start, end, service=None, attendees=None, location=None, ):
+    try:
+
+        time_zone = get_calendar_time_zone(user_id)
+        save_user(user_id, calendar_id='primary', time_zone=time_zone)
+
+        return True
+
+    except:
+
+        return False
+
+
+
+def add_event(user_id, description, start, end, service=None, attendees=None, location=None):
 
     credentials, time_zone, calendar_id = get_user_settings(user_id)[1:4]
     credentials = pickle.loads(credentials)
@@ -207,8 +253,8 @@ def add_event(user_id, description, start, end, service=None, attendees=None, lo
         return 'CREATED'
 
     except HttpError as err:
+        # log calendar_id not found... or something else wrong
         if err.resp.status == 404:
-            #log calendar_id not found... or something else missed
             save_user(user_id, calendar_id='primary')
             add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
 

@@ -15,7 +15,6 @@ def create_event(user_id, message):
     return event_status, start, attendees, location
 
 
-
 def get_start_end_time(start_time: str, duration=1):
 
     start_time_match = list(datefinder.find_dates(start_time))
@@ -53,3 +52,22 @@ def add_calendar(user_id, calendar_name):
                 status = 'MISTAKE'
 
     return status
+
+def unbind_calendar(user_id):
+    status = calendar_core.set_calendar_to_primary(user_id)
+
+    return status
+
+def authosire_user_step1(user_id):
+
+    auth_url = calendar_core.get_authorisation_url()
+
+    return auth_url
+
+def authosire_user_step2(user_id, key):
+
+    return calendar_core.fetch_token(user_id, key)
+
+def authorise(user_id):
+
+    calendar_core.authorise(user_id)
