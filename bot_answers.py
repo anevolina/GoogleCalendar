@@ -26,12 +26,14 @@ def get_event_status_answer(status, start, **kwargs):
     return message
 
 def get_add_calendar_message():
-    message = 'Give me exact name of an existed calendar, connected to your account, or any other name to create a new calendar'
+    message = 'Give me exact name of an existed calendar, connected to your account, or any other name to create a new ' \
+              'calendar\n\n' \
+              '/cancel to cancel this action'
 
     return message
 
 def get_canceled_message():
-    message = 'Okay'
+    message = 'Operation canceled'
 
     return message
 
@@ -44,7 +46,9 @@ def get_help_message():
     return message
 
 def get_authorise_url_message(url):
-    message = 'Please, follow this url to authorise me for adding calendars and events to your account\n' + url
+    message = 'Please, get a validation code following instructions from this url so I could add ' \
+              'calendars and events to your account\n\n' + url + \
+                '\n\n/cancel to cancel this action'
 
     return message
 
@@ -52,7 +56,7 @@ def get_authorise_url_message(url):
 def get_del_status_message(status):
 
     if status:
-        message = 'Calendar was set to the default value'
+        message = 'Calendar was set to the default value (primary calendar for your email)'
 
     else:
         message = 'Something went wrong. Please, try again'
@@ -67,3 +71,5 @@ def get_authorised_message():
 def get_wrong_code_message():
     message = 'Something went wrong. Make sure you paste the whole code for authorisation.\n' \
               '/cancel to cancel this operation'
+
+    return message

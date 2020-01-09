@@ -58,13 +58,13 @@ def unbind_calendar(user_id):
 
     return status
 
-def authosire_user_step1(user_id):
+def authorise_user_step1(user_id):
 
     auth_url = calendar_core.get_authorisation_url()
 
     return auth_url
 
-def authosire_user_step2(user_id, key):
+def authorise_user_step2(user_id, key):
 
     return calendar_core.fetch_token(user_id, key)
 
