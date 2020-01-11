@@ -1,6 +1,7 @@
 import datetime
 import pickle
 import sqlite3
+import os
 
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from googleapiclient.discovery import build
@@ -41,19 +42,28 @@ def fetch_token(user_id, code):
 def get_flow():
     scopes = ['https://www.googleapis.com/auth/calendar']
 
+    client_secret = get_path('client_secret.json')
+
     flow = Flow.from_client_secrets_file(
-        'client_secret.json',
+        client_secret,
         scopes=scopes,
         redirect_uri='urn:ietf:wg:oauth:2.0:oob')
 
     return flow
 
+def get_path(file_name):
+
+    path = os.path.dirname(os.path.abspath(__file__))
+    file_name = os.path.join(path, file_name)
+
+    return file_name
 
 def connect_db():
 
     conn = None
     try:
-        conn = sqlite3.connect('calendar_settings.sqlite')
+        db_path = get_path('calendar_settings.sqlite')
+        conn = sqlite3.connect(db_path)
     except:
         #Log connection error
 

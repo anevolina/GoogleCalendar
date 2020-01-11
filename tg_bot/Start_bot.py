@@ -5,7 +5,7 @@ from os.path import join, dirname
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-import GC_TelegramBot
+import tg_bot.GC_TelegramBot as GC_TelegramBot
 
 
 # Load .env & token for the bot

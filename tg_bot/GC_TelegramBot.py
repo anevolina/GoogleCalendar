@@ -1,5 +1,5 @@
-import bot_answers
-from main_api import create_event, add_calendar, unbind_calendar, authorise_user_step1, authorise_user_step2
+import tg_bot.bot_answers as bot_answers
+from core.main_api import create_event, add_calendar, unbind_calendar, authorise_user_step1, authorise_user_step2
 
 settings = {}
 messages = {}

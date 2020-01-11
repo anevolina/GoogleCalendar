@@ -2,7 +2,7 @@ import datefinder
 import datetime
 import re
 
-import calendar_core
+import core.calendar_core as calendar_core
 
 def create_event(user_id, message):
 
