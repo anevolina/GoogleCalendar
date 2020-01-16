@@ -8,21 +8,12 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 
-def authorise(user_id):
-    scopes = ['https://www.googleapis.com/auth/calendar']
-
-    flow = InstalledAppFlow.from_client_secrets_file("client_secret.json", scopes=scopes)
-    credentials = flow.run_console()
-
-    save_user(user_id, credentials=pickle.dumps(credentials))
-
-    return credentials
-
 def get_authorisation_url():
     flow = get_flow()
     auth_url, _ = flow.authorization_url(prompt='consent')
 
     return auth_url
+
 
 def fetch_token(user_id, code):
 
@@ -39,6 +30,7 @@ def fetch_token(user_id, code):
 
         return False
 
+
 def get_flow():
     scopes = ['https://www.googleapis.com/auth/calendar']
 
@@ -51,12 +43,14 @@ def get_flow():
 
     return flow
 
+
 def get_path(file_name):
 
     path = os.path.dirname(os.path.abspath(__file__))
     file_name = os.path.join(path, file_name)
 
     return file_name
+
 
 def connect_db():
 
@@ -134,6 +128,7 @@ def create_calendar(user_id, calendar_name, service=None):
 def fetch_calendar(user_id, calendar_name):
 
     calendar_id = get_calendar_id(user_id, calendar_name)
+
     time_zone = get_calendar_time_zone(user_id, calendar_id=calendar_id)
 
     save_user(user_id, calendar_id=calendar_id, time_zone=time_zone)
@@ -160,16 +155,13 @@ def get_calendar_id(user_id, calendar_name):
 
     return None
 
+
 def get_user_settings(user_id):
 
     settings = connect_db().cursor()
 
     sql = '''SELECT * FROM settings WHERE user_id=?'''
     result = settings.execute(sql, [user_id]).fetchone()
-
-    if not result:
-        authorise(user_id)
-        return get_user_settings(user_id)
 
     return result
 
@@ -190,6 +182,7 @@ def get_formated_start_end_time(start_time, end_time, time_zone):
 
     return start, end
 
+
 def get_calendar_time_zone(user_id, calendar_id=None, credentials=None, service=None):
 
     if not service:
@@ -203,33 +196,37 @@ def get_calendar_time_zone(user_id, calendar_id=None, credentials=None, service=
 
     return result['timeZone']
 
+
 def get_calendar_sevice(user_id, credentials=None):
 
     credentials = credentials or get_credentials(user_id)
 
     try:
         service = build('calendar', 'v3', credentials=credentials)
-
     except AttributeError:
-        authorise(user_id)
-        return get_calendar_sevice(user_id)
+        # authorise(user_id)
+        return None
 
     return service
 
+
 def  get_credentials(user_id):
 
-    credentials = pickle.loads(get_user_settings(user_id)[1])
+    try:
+        credentials = pickle.loads(get_user_settings(user_id)[1])
+    except TypeError:
+        #Log Error
 
-    if not credentials:
-        credentials = authorise(user_id)
+        credentials = None
 
     return credentials
+
 
 def set_calendar_to_primary(user_id):
 
     try:
-
         time_zone = get_calendar_time_zone(user_id)
+
         save_user(user_id, calendar_id='primary', time_zone=time_zone)
 
         return True
@@ -239,10 +236,10 @@ def set_calendar_to_primary(user_id):
         return False
 
 
-
 def add_event(user_id, description, start, end, service=None, attendees=None, location=None):
 
     credentials, time_zone, calendar_id = get_user_settings(user_id)[1:4]
+
     credentials = pickle.loads(credentials)
 
     start_formated, end_formated = get_formated_start_end_time(start, end, time_zone)

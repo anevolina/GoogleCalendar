@@ -2,15 +2,40 @@ import datefinder
 import datetime
 import re
 
-import core.calendar_core as calendar_core
+from functools import wraps
 
+import core.calendar_core as calendar_core
+from core.exceptions import GCUnauthorisedUserError
+
+
+def check_auth(func):
+
+    @wraps(func)
+    def wraper(*args, **kwargs):
+        if 'user_id' in kwargs.keys():
+            check_user_settings(kwargs['user_id'])
+        return func(*args, **kwargs)
+
+    return wraper
+
+
+def check_user_settings(user_id):
+    if not calendar_core.get_user_settings(user_id):
+        raise GCUnauthorisedUserError('Current user doesn\'t have credentials in database')
+
+
+@check_auth
 def create_event(user_id, message):
 
     attendees = find_attendees(message)
     location = find_location(message)
     start, end = get_start_end_time(message)
 
-    event_status = calendar_core.add_event(user_id, message, start, end, attendees=attendees, location=location)
+    try:
+        event_status = calendar_core.add_event(user_id, message, start, end, attendees=attendees, location=location)
+    except Exception as e:
+        #Log Exception
+        print(e)
 
     return event_status, start, attendees, location
 
@@ -40,8 +65,11 @@ def find_location(message):
 
     return None
 
+
+@check_auth
 def add_calendar(user_id, calendar_name):
     fetched = calendar_core.fetch_calendar(user_id, calendar_name)
+
     status = 'FETCHED'
 
     if not fetched:
@@ -53,21 +81,21 @@ def add_calendar(user_id, calendar_name):
 
     return status
 
+
+@check_auth
 def unbind_calendar(user_id):
     status = calendar_core.set_calendar_to_primary(user_id)
 
     return status
 
-def authorise_user_step1(user_id):
+
+def authorise_user_step1():
 
     auth_url = calendar_core.get_authorisation_url()
 
     return auth_url
 
+
 def authorise_user_step2(user_id, key):
 
     return calendar_core.fetch_token(user_id, key)
-
-def authorise(user_id):
-
-    calendar_core.authorise(user_id)
