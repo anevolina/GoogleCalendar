@@ -30,7 +30,7 @@ import views, resources, models
 def create_tables():
     db.create_all()
 
-@jwt.token_in_blacklist_loader()
+@jwt.token_in_blacklist_loader
 def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     return models.RevokedTokensModel.is_it_blacklised(jti)
