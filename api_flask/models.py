@@ -42,5 +42,21 @@ class UserModel(db.Model):
         return sha256.hash(password)
 
     @staticmethod
-    def verify_password(password):
+    def verify_password(password, hash):
         return sha256.verify(password, hash)
+
+class RevokedTokensModel(db.Model):
+    __tablename__ = 'revoked_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(120))
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @classmethod
+    def is_it_blacklised(cls, jti):
+        query = cls.query.filter_by(jti=jti).first()
+
+        return bool(query)
