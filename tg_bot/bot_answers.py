@@ -73,3 +73,10 @@ def get_wrong_code_message():
               '/cancel to cancel this operation'
 
     return message
+
+def get_unauthorised_user_error_message():
+
+    message = 'You didn\'t authorise at Google Calendar service.\n\n' \
+                      'Press /start to proceed'
+
+    return message
