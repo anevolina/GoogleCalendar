@@ -82,5 +82,5 @@ ___
 - #### Exceptions
 
 #### `GCUnauthorisedUserError`
-Raised if user didn't authorised in Google calendar service (we don't have
+Raised if user didn't authorised in Google Calendar service (we don't have
 saved credentials for them).
