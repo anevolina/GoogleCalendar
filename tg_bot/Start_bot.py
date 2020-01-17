@@ -23,6 +23,7 @@ cancel_handler = CommandHandler('cancel', GC_TelegramBot.chancel_callback)
 start_handler = CommandHandler('start', GC_TelegramBot.start_callback)
 help_handler = CommandHandler('help', GC_TelegramBot.help_callback)
 unbind_calendar_handler = CommandHandler('unbind', GC_TelegramBot.unbind_calendar_callback)
+logout_handler = CommandHandler('logout', GC_TelegramBot.logout_callback)
 
 # define other handlers
 message_handler = MessageHandler(Filters.text, GC_TelegramBot.handle_user_message)
@@ -33,6 +34,7 @@ dispatcher.add_handler(cancel_handler)
 dispatcher.add_handler(start_handler)
 dispatcher.add_handler(help_handler)
 dispatcher.add_handler(unbind_calendar_handler)
+dispatcher.add_handler(logout_handler)
 
 
 dispatcher.add_handler(message_handler)

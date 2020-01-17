@@ -41,7 +41,8 @@ def get_help_message():
     message = 'To start, type a message... Write here something else, please.\n\n' \
               '/bind - to customise in which calendar I will save all events\n' \
               '/unbind - to set the calendar to the default value\n' \
-              '/start - to authorise with new email'
+              '/start - to authorise with new email\n' \
+              '/logout - to logout from Google Calendar service for this bot'
 
     return message
 
@@ -77,6 +78,13 @@ def get_wrong_code_message():
 def get_unauthorised_user_error_message():
 
     message = 'You didn\'t authorise at Google Calendar service.\n\n' \
-                      'Press /start to proceed'
+                      'Press /start to connect'
 
+    return message
+
+def get_logout_user_message(status):
+    if status:
+        message = 'You\'ve been logout from Google Calendar service'
+    else:
+        message = 'Something went wrong, please try again later'
     return message

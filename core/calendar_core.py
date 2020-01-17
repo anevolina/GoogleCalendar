@@ -210,7 +210,7 @@ def get_calendar_sevice(user_id, credentials=None):
     return service
 
 
-def  get_credentials(user_id):
+def get_credentials(user_id):
 
     try:
         credentials = pickle.loads(get_user_settings(user_id)[1])
@@ -236,9 +236,21 @@ def set_calendar_to_primary(user_id):
         return False
 
 
+def del_user(user_id):
+    settings = connect_db()
+
+    sql = '''DELETE FROM settings WHERE user_id=?'''
+    result = settings.execute(sql, [user_id])
+    settings.commit()
+
+    return bool(result.rowcount)
+
 def add_event(user_id, description, start, end, service=None, attendees=None, location=None):
 
     credentials, time_zone, calendar_id = get_user_settings(user_id)[1:4]
+
+    if not calendar_id:
+        set_calendar_to_primary(user_id)
 
     credentials = pickle.loads(credentials)
 
@@ -262,7 +274,7 @@ def add_event(user_id, description, start, end, service=None, attendees=None, lo
     except HttpError as err:
         # log calendar_id not found... or something else wrong
         if err.resp.status == 404:
-            save_user(user_id, calendar_id='primary')
-            add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
+            pass
+            # add_event(user_id, description, start, end, service=service, attendees=attendees, location=location, )
 
     return 'MISTAKE'

@@ -42,8 +42,9 @@ ___
 #### `create_event(user_id, message)`  
 Function will parse given raw `message`, searching for date, time, attendees and location,
 and then publish an event at Google Calendar for given `user_id`.  
-If it couldn't find date and/or time it'll create an event for the whole current day.
- 
+If it couldn't find date and/or time it'll create an event for the whole current day.  
+It'll raise `GCUnauthorisedUserError` exception if we don't have credentials for given user.  
+
 *Input*  
 `user_id: integer` - user id as it is in the internal database  
 `message: string` - user input
@@ -58,6 +59,7 @@ ___
 #### `add_calendar(user_id, calendar_name)`  
 Function tries to fetch existed calendar by given `calendar_name` and if there is
 no calendar with such a name it creates a new one.
+It'll raise `GCUnauthorisedUserError` exception if we don't have credentials for given user.  
 
 *Input*  
 `user_id: integer` - user id as it is in our database  
@@ -70,13 +72,25 @@ by given name, `"CREATED"` - if a new calendar was created, `"MISTAKE"` - otherw
 ___
 #### `unbind_calendar(user_id)`  
 Set calendar id to `"primary"` value. All further events will be added to the main
-calendar for the user.
-  
+calendar for the user.  
+It'll raise `GCUnauthorisedUserError` exception if we don't have credentials for given user.  
+
 *Input*  
 `user_id: integer` - user id as it is in our database
 
 *Output*  
 `True/False` - whether operation was successful or not.
+
+___
+#### `logout(user_id)`  
+Function deletes information about user from our database. It'll raise `GCUnauthorisedUserError` 
+exception if we don't have records for given user.  
+   
+*Input*  
+`user_id: integer` - user id as it is in our database
+
+*Output*  
+`True/False` - whether user was deleted or not
 
 ___
 - #### Exceptions

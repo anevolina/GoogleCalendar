@@ -1,6 +1,6 @@
 import tg_bot.bot_answers as bot_answers
 from core.main_api import (create_event, add_calendar, unbind_calendar, authorise_user_step1, authorise_user_step2,
-    check_user_settings)
+    check_user_settings, logout)
 from core.exceptions import GCUnauthorisedUserError
 
 settings = {}
@@ -110,6 +110,20 @@ def del_settings(user_id):
         pass
 
     return
+
+def logout_callback(bot, update):
+    user_id = get_user_id(bot, update)
+
+    try:
+        status = logout(user_id=user_id)
+
+    except GCUnauthorisedUserError:
+        bot_answer = bot_answers.get_unauthorised_user_error_message()
+
+    else:
+        bot_answer = bot_answers.get_logout_user_message(status)
+
+    send_message(bot, user_id, bot_answer)
 
 
 def get_settings(user_id, key=False):

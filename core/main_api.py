@@ -88,6 +88,10 @@ def unbind_calendar(user_id):
 
     return status
 
+@check_auth
+def logout(user_id):
+    return calendar_core.del_user(user_id)
+
 
 def authorise_user_step1():
 
