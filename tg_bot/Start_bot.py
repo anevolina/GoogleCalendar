@@ -1,3 +1,5 @@
+"""Main module to start telegram bot - it connects all functions to telegram API"""
+
 import os
 
 from dotenv import load_dotenv

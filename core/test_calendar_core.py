@@ -8,6 +8,7 @@ import calendar_core
 class CalendarCoreTest(unittest.TestCase):
 
     def test_get_start_end_time(self):
+        """Test parsing start and end time from a given string to datetime format"""
 
         start1, end1 = get_start_end_time('27 Jul 2019 11 a.m.')
         start2, end2 = get_start_end_time('April 19 2018 at 6 p.m.', 0.5)
@@ -22,6 +23,8 @@ class CalendarCoreTest(unittest.TestCase):
         self.assertEqual((start3, end3), (datetime.now().date(), datetime.now().date()))
 
     def test_get_update_sql_text(self):
+        """Test sql formatting"""
+
         param1 = calendar_core.get_update_sql_text(credentials='value_credentials', calendar_id='123')
         param2 = calendar_core.get_update_sql_text(time_zone='Nicosia/Cyprus')
 

@@ -1,3 +1,5 @@
+"""Module with text messages bot will send to users"""
+
 def get_calendar_status_message(status, message):
     if status == 'FETCHED':
         message = 'Calendar ' + message + ' was bind with your account'
