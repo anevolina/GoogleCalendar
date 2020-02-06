@@ -2,15 +2,16 @@
 
 import datetime
 import pickle
-import sqlite3
 import os
 
+from pymongo import MongoClient
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from core.logger import GCLogger
 
+MongoDB = 'mongodb://localhost:27017/'
 
 def get_authorisation_url():
     """The first step to authorize with URL - is to generate it.
@@ -30,7 +31,6 @@ def fetch_token(user_id, code):
         code - code, given to the user after following auth_url;
     Output:
         True/False - whether authorization succeeded or not;"""
-
     flow = get_flow()
 
     try:
@@ -71,15 +71,8 @@ def get_path(file_name):
 def connect_db():
     """Return connection to the database with user settings"""
 
-    conn = None
-
-    try:
-        db_path = get_path('calendar_settings.sqlite')
-        conn = sqlite3.connect(db_path)
-
-    except Exception as e:
-        logger.exception(e)
-        pass
+    m_client = MongoClient(MongoDB)
+    conn = m_client.add_event_settings
 
     return conn
 
@@ -92,41 +85,16 @@ def save_user(user_id, **kwargs):
 
     settings = connect_db()
     save_settings(settings, user_id, **kwargs)
-    settings.commit()
 
 
 def save_settings(settings, user_id, **kwargs):
-    """Generate sql query to save user settings, and execute it (without commit);
+    """save user settings;
     Input:
         settings - connection to database with settings;
         user_id - user id as it is in the database;
         **kwargs - column names(keys) and values to save; accepted keys = [credentials, time_zone, calendar_id];"""
 
-    on_update = get_update_sql_text(**kwargs)
-    columns, values = get_insert_sql_text(**kwargs)
-
-    sql = '''INSERT INTO settings (user_id, {columns}) VALUES ({user_id},{values})
-            ON CONFLICT(settings.user_id) DO UPDATE SET 
-            {on_update};'''.format(columns=columns, user_id=user_id, values=values, on_update=on_update)
-
-    param = tuple(kwargs.values())
-    settings.execute(sql, param)
-
-
-def get_update_sql_text(**kwargs):
-    """Return template to sql in case of id conflict"""
-
-    on_update = ',\n'.join(key + ' = excluded.' + key for key in kwargs.keys())
-    return on_update
-
-
-def get_insert_sql_text(**kwargs):
-    """Return template to sql for inserting parameters"""
-
-    columns = ','.join(key for key in kwargs.keys())
-    values = ','.join('?' for _ in range(len(kwargs.values())))
-
-    return columns, values
+    settings.settings.update_one({'_id': user_id}, {"$set": kwargs}, True)
 
 
 def create_calendar(user_id, calendar_name, service=None):
@@ -139,7 +107,11 @@ def create_calendar(user_id, calendar_name, service=None):
     Output:
         True/False - whether operation succeeded or not;"""
 
-    credentials, time_zone = get_user_settings(user_id)[1:3]
+    settings = get_user_settings(user_id)
+
+    credentials = settings.get('credentials')
+    time_zone = settings.get('time_zone')
+
     credentials = pickle.loads(credentials)
 
     service = service or get_calendar_sevice(user_id, credentials=credentials)
@@ -179,7 +151,6 @@ def fetch_calendar(user_id, calendar_name):
     time_zone = get_calendar_time_zone(user_id, calendar_id=calendar_id)
 
     save_user(user_id, calendar_id=calendar_id, time_zone=time_zone)
-
     return calendar_id is not None
 
 
@@ -214,10 +185,9 @@ def get_calendar_id(user_id, calendar_name):
 def get_user_settings(user_id):
     """Get settings from our database by given user_id"""
 
-    settings = connect_db().cursor()
+    settings = connect_db()
 
-    sql = '''SELECT * FROM settings WHERE user_id=?'''
-    result = settings.execute(sql, [user_id]).fetchone()
+    result = settings.settings.find_one({'_id': {'$eq': user_id}})
 
     return result
 
@@ -291,7 +261,7 @@ def get_credentials(user_id):
         credentials - dict - credentials for using GC service"""
 
     try:
-        credentials = pickle.loads(get_user_settings(user_id)[1])
+        credentials = pickle.loads(get_user_settings(user_id).get('credentials'))
 
     except TypeError:
         logger.error(TypeError, user_id=user_id)
@@ -328,11 +298,8 @@ def del_user(user_id):
 
     settings = connect_db()
 
-    sql = '''DELETE FROM settings WHERE user_id=?'''
-    result = settings.execute(sql, [user_id])
-    settings.commit()
-
-    return bool(result.rowcount)
+    res = settings.settings.delete_one({'_id': {'$eq': user_id}})
+    return res.deleted_count
 
 def add_event(user_id, description, start, end, service=None, attendees=None, location=None):
     """Try to add event;
@@ -347,7 +314,11 @@ def add_event(user_id, description, start, end, service=None, attendees=None, lo
         ['CREATED', 'MISTAKE']
     """
 
-    credentials, time_zone, calendar_id = get_user_settings(user_id)[1:4]
+    settings = get_user_settings(user_id)
+
+    credentials = settings.get('credentials')
+    time_zone = settings.get('time_zone')
+    calendar_id = settings.get('calendar_id')
 
     if not calendar_id:
         set_calendar_to_primary(user_id)
