@@ -1,5 +1,10 @@
 """Telegram Bot module for communicating with the main API"""
 
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+
 import tg_bot.bot_answers as bot_answers
 from core.main_api import (create_event, add_calendar, unbind_calendar, authorise_user_step1, authorise_user_step2,
     check_user_settings, logout)
